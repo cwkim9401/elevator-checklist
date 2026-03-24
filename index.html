@@ -227,20 +227,23 @@ function shareResult() {
 
 // 📱 문자(SMS) 직접 보내기 — sms: URI 스킴 사용
 function sendSMS() {
-  const url      = buildShortUrl();
-  const building = document.getElementById('m-building').textContent;
-  const date     = document.getElementById('m-date').textContent;
+  // ✅ URL을 미리 저장 (location.href 변경 전에)
+  const url = buildShortUrl();
+
+  const building = document.getElementById('m-building').textContent.trim();
+  const date     = document.getElementById('m-date').textContent.trim();
   const ok       = document.getElementById('s-ok').textContent;
   const bad      = document.getElementById('s-bad').textContent;
-  const smsBody  = `[승강기 체크리스트 결과]\n건물명: ${building}\n점검일: ${date}\n양호 ${ok}건 / 미흡 ${bad}건\n\n결과 확인:\n${url}`;
 
-  // iOS는 sms:&body=, Android는 sms:?body= 형식
-  // sms:?&body= 형식은 양쪽 모두 호환
+  const smsBody = `[승강기 체크리스트 결과]\n건물명: ${building}\n점검일: ${date}\n양호 ${ok}건 / 미흡 ${bad}건\n\n결과 확인:\n${url}`;
+
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   const separator = isIOS ? '&' : '?';
+  // ✅ URL 전체를 encodeURIComponent로 한 번만 감쌈
   const smsUrl = `sms:${separator}body=${encodeURIComponent(smsBody)}`;
 
-  window.location.href = smsUrl;
+  // ✅ location.href 대신 window.open 사용 (현재 페이지 URL 보존)
+  window.open(smsUrl, '_self');
 }
 
 // 🔗 URL만 복사
@@ -386,26 +389,29 @@ function render(data) {
 function buildShortUrl() {
   const base = window.location.origin + window.location.pathname;
   const p = new URLSearchParams();
-  const building = document.getElementById('m-building').textContent;
-  const elevnum  = document.getElementById('m-elevnum').textContent;
-  const date     = document.getElementById('m-date').textContent;
-  const checker  = document.getElementById('m-checker').textContent;
-  const opinion  = document.getElementById('opinion-text').textContent;
+
+  const building = document.getElementById('m-building').textContent.trim();
+  const elevnum  = document.getElementById('m-elevnum').textContent.trim();
+  const date     = document.getElementById('m-date').textContent.trim();
+  const checker  = document.getElementById('m-checker').textContent.trim();
+  const opinion  = document.getElementById('opinion-text').textContent.trim();
 
   if (building && building !== '-') p.set('b', building);
-  if (elevnum && elevnum !== '-')   p.set('e', elevnum);
-  if (date && date !== '-')         p.set('d', date);
-  if (checker && checker !== '-')   p.set('c', checker);
-  if (opinion && opinion !== '-')   p.set('o', opinion);
+  if (elevnum  && elevnum  !== '-') p.set('e', elevnum);
+  if (date     && date     !== '-') p.set('d', date);
+  if (checker  && checker  !== '-') p.set('c', checker);
+  if (opinion  && opinion  !== '-') p.set('o', opinion);
 
-  // 양호=1, 미흡=0 으로 상태를 압축 (예: "11101")
-  const params = new URLSearchParams(window.location.search);
+  // 현재 URL 파라미터에서 상태 읽기 (레거시 한글 키 포함 대응)
+  const rawSearch = window.location.search;
+  const params = new URLSearchParams(rawSearch);
   const statusStr = ITEMS.map(item => {
     const val = params.get(item.key) || params.get(item.legacyKey) || '';
     return val === '양호' ? '1' : val === '미흡' ? '0' : '';
   }).join('');
-  if (statusStr) p.set('s', statusStr);
+  if (statusStr.replace(/[^01]/g,'').length > 0) p.set('s', statusStr);
 
+  // ✅ p.toString()은 한글 값을 자동으로 percent-encode 처리함
   return base + '?' + p.toString();
 }
 

@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>승강기 체크리스트 결과</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: #f4f4f0;
+    min-height: 100vh;
+    padding: 28px 16px 48px;
+    color: #1a1a1a;
+  }
+
+  .container { max-width: 680px; margin: 0 auto; }
+
+  .header {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .header h1 {
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.5;
+    margin-bottom: 4px;
+  }
+  .header p { font-size: 12px; color: #999; }
+
+  /* 메타 카드 */
+  .meta-card {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e8e8e4;
+    padding: 18px 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .meta-item label {
+    font-size: 10px;
+    color: #aaa;
+    font-weight: 600;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 3px;
+  }
+  .meta-item span {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+
+  /* 요약 카드 */
+  .summary-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .summary-card {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e8e8e4;
+    padding: 16px 10px;
+    text-align: center;
+  }
+  .summary-card .num {
+    font-size: 30px;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 5px;
+  }
+  .summary-card .lbl { font-size: 11px; color: #aaa; }
+  .ok-num  { color: #2a7a3b; }
+  .bad-num { color: #c0392b; }
+
+  /* 섹션 타이틀 */
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #aaa;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    padding-left: 2px;
+  }
+
+  /* 체크 카드 (모바일 카드형) */
+  .check-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+
+  .check-card {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e8e8e4;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .check-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .check-card-left { flex: 1; }
+
+  .check-cat {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 4px;
+  }
+
+  .check-desc {
+    font-size: 12px;
+    color: #666;
+    line-height: 1.6;
+  }
+
+  .badge {
+    flex-shrink: 0;
+    display: inline-block;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .badge-ok  { background: #e8f5ea; color: #2a7a3b; }
+  .badge-bad { background: #fdecea; color: #c0392b; }
+  .badge-na  { background: #f2f2f0; color: #bbb; }
+
+  /* 하단 메타 (법적근거 + 과태료) — 구분선 위 */
+  .check-card-bottom {
+    border-top: 1px solid #f0f0ec;
+    padding-top: 10px;
+    display: flex;
+    gap: 16px;
+  }
+  .meta-chip { display: flex; flex-direction: column; gap: 2px; }
+  .meta-chip span:first-child {
+    font-size: 10px;
+    color: #bbb;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+  }
+  .meta-chip span:last-child { font-size: 11px; color: #888; line-height: 1.5; }
+
+  /* PC에서는 테이블 레이아웃 */
+  @media (min-width: 600px) {
+    .check-list { display: none; }
+    .table-card { display: block; }
+  }
+  @media (max-width: 599px) {
+    .check-list { display: flex; }
+    .table-card { display: none; }
+  }
+
+  /* 테이블 (PC용) */
+  .table-card {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e8e8e4;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    background: #f8f8f5;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.4px;
+    color: #666;
+    padding: 12px 14px;
+    text-align: left;
+    border-bottom: 1px solid #e8e8e4;
+  }
+  thead th:last-child { text-align: center; }
+  tbody tr { border-bottom: 1px solid #f0f0ec; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody td { padding: 14px; vertical-align: top; color: #1a1a1a; line-height: 1.5; }
+  .cat-cell { font-weight: 700; font-size: 12px; white-space: nowrap; width: 110px; }
+  .desc-cell { font-size: 12px; color: #555; line-height: 1.6; }
+  .law-cell { font-size: 11px; color: #999; white-space: nowrap; text-align: center; width: 90px; }
+  .fine-cell { font-size: 11px; color: #999; line-height: 1.5; min-width: 120px; }
+  .status-cell { text-align: center; width: 70px; }
+
+  /* 종합의견 */
+  .opinion-card {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e8e8e4;
+    padding: 18px 20px;
+    margin-bottom: 20px;
+  }
+  .opinion-card h3 {
+    font-size: 10px;
+    font-weight: 700;
+    color: #aaa;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .opinion-card p { font-size: 13px; color: #333; line-height: 1.7; min-height: 36px; }
+
+  /* 인쇄 버튼 */
+  .print-btn {
+    display: block;
+    width: 100%;
+    padding: 15px;
+    background: #1a1a1a;
+    color: #fff;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    letter-spacing: 0.3px;
+    transition: background 0.2s;
+  }
+  .print-btn:hover { background: #333; }
+
+  /* 로딩 */
+  .loading { text-align: center; padding: 80px 20px; color: #bbb; font-size: 14px; }
+  .spinner {
+    width: 28px; height: 28px;
+    border: 2px solid #e8e8e4;
+    border-top-color: #1a1a1a;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 14px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  #result { display: none; }
+
+  @media print {
+    body { background: #fff; padding: 16px; }
+    .print-btn { display: none; }
+    .check-list { display: none !important; }
+    .table-card { display: block !important; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <h1>승강기 관리주체 법정 의무사항<br>확인 체크리스트</h1>
+    <p>설문 제출 즉시 결과가 표시됩니다</p>
+  </div>
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p>결과를 불러오는 중...</p>
+  </div>
+
+  <div id="result">
+
+    <div class="meta-card">
+      <div class="meta-item"><label>건물명</label><span id="m-building">-</span></div>
+      <div class="meta-item"><label>승강기번호</label><span id="m-elevnum">-</span></div>
+      <div class="meta-item"><label>점검일</label><span id="m-date">-</span></div>
+      <div class="meta-item"><label>확인자</label><span id="m-checker">-</span></div>
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-card"><div class="num ok-num" id="s-ok">0</div><div class="lbl">양호</div></div>
+      <div class="summary-card"><div class="num bad-num" id="s-bad">0</div><div class="lbl">미흡</div></div>
+      <div class="summary-card"><div class="num" style="color:#1a1a1a">5</div><div class="lbl">전체 항목</div></div>
+    </div>
+
+    <div class="section-title">확인 항목</div>
+
+    <!-- 모바일: 카드형 -->
+    <div class="check-list" id="card-list"></div>
+
+    <!-- PC: 테이블형 -->
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>구분</th>
+            <th>확인 항목</th>
+            <th style="text-align:center">법적근거</th>
+            <th>과태료 등</th>
+            <th style="text-align:center">결과</th>
+          </tr>
+        </thead>
+        <tbody id="result-tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="opinion-card">
+      <h3>종합의견</h3>
+      <p id="opinion-text">-</p>
+    </div>
+
+    <button class="print-btn" onclick="window.print()">인쇄 / PDF 저장</button>
+
+  </div>
+</div>
+
+<script>
+const ITEMS = [
+  { key:'안전관리자선임', cat:'안전관리자 선임',    desc:'승강기 안전관리자를 선임하여 승강기를 관리하고 있는가? (선임·변경 시 30일 이내 통보)',                                                               law:'승강기법 제29조', fine:'최대 100만원' },
+  { key:'안전관리자교육', cat:'안전관리자 교육',    desc:'승강기 안전관리자는 선임된 후 3개월 이내, 교육을 받았는가? (교육은 수료한 날부터 3년마다 갱신 필요)',                                               law:'승강기법 제29조', fine:'최대 200만원' },
+  { key:'승강기책임보험', cat:'승강기 책임보험',    desc:'관리주체는 승강기 책임보험에 가입하였는가? (사고 시 손해 배상 보장을 위한 보험 가입 필요)',                                                         law:'승강기법 제30조', fine:'최대 400만원' },
+  { key:'승강기자체점검', cat:'승강기 자체점검',    desc:'승강기 자체 점검을 월 1회 이상 실시하고, 결과를 정하는 기간 이내에 승강기안전종합정보망에 입력하였는가? (점검 후 10일 이내)',                         law:'승강기법 제31조', fine:'미실시·거짓 입력 최대 400만원\n기한 경과 최대 200만원' },
+  { key:'사고고장신고',   cat:'승강기 사고·고장 신고', desc:'관리하는 승강기 사고·고장이 발생한 경우 한국승강기안전공단에 통보하고 있는가? (중대한 사고·고장 발생 시 지체 없이 신고)', law:'승강기법 제48조', fine:'지연(1개월 초과)·거짓 통보 최대 400만원' }
+];
+
+function badgeHtml(status) {
+  if (status === '양호') return '<span class="badge badge-ok">양호</span>';
+  if (status === '미흡') return '<span class="badge badge-bad">미흡</span>';
+  return '<span class="badge badge-na">미입력</span>';
+}
+
+function render(data) {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('result').style.display = 'block';
+
+  document.getElementById('m-building').textContent = data.building || '-';
+  document.getElementById('m-elevnum').textContent  = data.elevnum  || '-';
+  document.getElementById('m-date').textContent     = data.date     || '-';
+  document.getElementById('m-checker').textContent  = data.checker  || '-';
+  document.getElementById('opinion-text').textContent = data.opinion || '-';
+
+  let ok = 0, bad = 0;
+  const cardList = document.getElementById('card-list');
+  const tbody    = document.getElementById('result-tbody');
+  cardList.innerHTML = '';
+  tbody.innerHTML = '';
+
+  data.items.forEach(item => {
+    if (item.status === '양호') ok++;
+    if (item.status === '미흡') bad++;
+
+    // 모바일 카드
+    const card = document.createElement('div');
+    card.className = 'check-card';
+    card.innerHTML = `
+      <div class="check-card-top">
+        <div class="check-card-left">
+          <div class="check-cat">${item.cat}</div>
+          <div class="check-desc">${item.desc}</div>
+        </div>
+        ${badgeHtml(item.status)}
+      </div>
+      <div class="check-card-bottom">
+        <div class="meta-chip">
+          <span>법적근거</span>
+          <span>${item.law}</span>
+        </div>
+        <div class="meta-chip">
+          <span>과태료</span>
+          <span>${item.fine.replace(/\n/g,'<br>')}</span>
+        </div>
+      </div>`;
+    cardList.appendChild(card);
+
+    // PC 테이블
+    tbody.innerHTML += `
+      <tr>
+        <td class="cat-cell">${item.cat}</td>
+        <td class="desc-cell">${item.desc}</td>
+        <td class="law-cell">${item.law}</td>
+        <td class="fine-cell">${item.fine.replace(/\n/g,'<br>')}</td>
+        <td class="status-cell">${badgeHtml(item.status)}</td>
+      </tr>`;
+  });
+
+  document.getElementById('s-ok').textContent  = ok;
+  document.getElementById('s-bad').textContent = bad;
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  const params = new URLSearchParams(window.location.search);
+  const data = {
+    building: params.get('건물명')   || '',
+    elevnum:  params.get('승강기번호') || '',
+    date:     params.get('점검일')   || '',
+    checker:  params.get('확인자')   || '',
+    opinion:  params.get('종합의견') || '',
+    items: ITEMS.map(item => ({ ...item, status: params.get(item.key) || null }))
+  };
+
+  const hasData = window.location.search.length > 1;
+  if (!hasData) {
+    data.building = '샘플빌딩'; data.elevnum = 'A-001';
+    data.date = new Date().toLocaleDateString('ko-KR'); data.checker = '홍길동';
+    data.opinion = '전반적으로 양호하나 자체점검 정보망 입력 기한 준수 필요';
+    ['양호','양호','양호','미흡','양호'].forEach((s,i) => data.items[i].status = s);
+  }
+
+  setTimeout(() => render(data), hasData ? 300 : 500);
+});
+</script>
+</body>
+</html>

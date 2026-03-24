@@ -209,18 +209,22 @@ function showToast(msg) {
 
 // 📤 공유 버튼 — 기기 공유 시트(카카오톡, 문자, 메일 등) 호출
 function shareResult() {
-  const url      = buildShortUrl();
-  const building = document.getElementById('m-building').textContent;
-  const date     = document.getElementById('m-date').textContent;
+  const url = buildShortUrl();
+  const building = document.getElementById('m-building').textContent.trim();
+  const date     = document.getElementById('m-date').textContent.trim();
   const ok       = document.getElementById('s-ok').textContent;
   const bad      = document.getElementById('s-bad').textContent;
-  const shareText = `[승강기 체크리스트 결과]\n건물명: ${building}\n점검일: ${date}\n양호 ${ok}건 / 미흡 ${bad}건`;
+  const shareText = `[승강기 체크리스트 결과]\n건물명: ${building}\n점검일: ${date}\n양호 ${ok}건 / 미흡 ${bad}건\n\n결과 확인:\n${url}`;
 
   if (navigator.share) {
-    navigator.share({ title: '승강기 체크리스트 결과', text: shareText, url })
-      .catch(() => {});
+    // ✅ url 파라미터 제거 — text 안에만 URL 포함
+    navigator.share({ title: '승강기 체크리스트 결과', text: shareText })
+      .catch(() => {
+        copyToClipboard(shareText);
+        showToast('내용이 복사되었습니다. 붙여넣기 해서 공유하세요.');
+      });
   } else {
-    copyToClipboard(shareText + '\n\n결과 확인:\n' + url);
+    copyToClipboard(shareText);
     showToast('내용이 복사되었습니다. 붙여넣기 해서 공유하세요.');
   }
 }
@@ -440,7 +444,16 @@ window.addEventListener('DOMContentLoaded', () => {
     data.opinion='전반적으로 양호하나 자체점검 정보망 입력 기한 준수 필요';
     ['양호','양호','양호','미흡','양호'].forEach((s,i)=>data.items[i].status=s);
   }
-  setTimeout(() => render(data), hasData ? 300 : 500);
+  setTimeout(() => {
+    render(data);
+
+    // ✅ 렌더링 후 URL을 깔끔한 ASCII URL로 교체
+    const cleanUrl = buildShortUrl();
+    if (window.location.href !== cleanUrl) {
+      history.replaceState(null, '', cleanUrl);
+    }
+
+  }, hasData ? 300 : 500);
 });
 </script>
 </body>

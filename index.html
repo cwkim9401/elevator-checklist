@@ -61,8 +61,6 @@
   .btn-kakao { background: #fee500; color: #1a1a1a; }
   .btn-sms   { background: #34c759; color: #fff; }
   .btn-url   { background: #1a1a1a; color: #fff; }
-  .btn-pdf   { background: #e74c3c; color: #fff; }
-  .btn-print { background: #fff; color: #555; border: 1.5px solid #e0e0dc; }
 
   /* 토스트 */
   .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(16px); background: #1a1a1a; color: #fff; font-size: 13px; font-weight: 500; padding: 12px 24px; border-radius: 100px; opacity: 0; transition: all 0.25s; pointer-events: none; white-space: nowrap; z-index: 999; }
@@ -72,16 +70,7 @@
   .spinner { width: 28px; height: 28px; border: 2px solid #e8e8e4; border-top-color: #1a1a1a; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 14px; }
   @keyframes spin { to { transform: rotate(360deg); } }
   #result { display: none; }
-
-  @media print {
-    body { background: #fff; padding: 16px; }
-    .btn-group, .toast { display: none; }
-    .check-list { display: none !important; }
-    .table-card { display: block !important; }
-  }
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
 </head>
 <body>
@@ -133,7 +122,6 @@
     </div>
 
     <div class="btn-group">
-      <!-- 카카오톡/문자: 기기 공유 시트 호출 -->
       <button class="btn btn-kakao" onclick="shareResult()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/>
@@ -143,7 +131,6 @@
         카카오톡으로 결과 보내기
       </button>
 
-      <!-- 문자(SMS) 직접 보내기 -->
       <button class="btn btn-sms" onclick="sendSMS()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
@@ -151,34 +138,12 @@
         문자 메시지로 결과 보내기
       </button>
 
-      <!-- URL 복사 -->
       <button class="btn btn-url" onclick="copyUrl()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="9" y="9" width="13" height="13" rx="2"/>
           <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
         </svg>
         결과 URL 복사하기
-      </button>
-
-      <!-- PDF 다운로드 -->
-      <button class="btn btn-pdf" onclick="downloadPDF()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/>
-          <line x1="12" y1="18" x2="12" y2="12"/>
-          <polyline points="9 15 12 18 15 15"/>
-        </svg>
-        PDF 다운로드
-      </button>
-
-      <!-- 인쇄 -->
-      <button class="btn btn-print" onclick="window.print()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="6 9 6 2 18 2 18 9"/>
-          <path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/>
-          <rect x="6" y="14" width="12" height="8"/>
-        </svg>
-        인쇄하기
       </button>
     </div>
   </div>
@@ -235,8 +200,6 @@ function sendSMS() {
   const bad      = document.getElementById('s-bad').textContent;
   const smsBody  = `[승강기 체크리스트 결과]\n건물명: ${building}\n점검일: ${date}\n양호 ${ok}건 / 미흡 ${bad}건\n\n결과 확인:\n${url}`;
 
-  // iOS는 sms:&body=, Android는 sms:?body= 형식
-  // sms:?&body= 형식은 양쪽 모두 호환
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   const separator = isIOS ? '&' : '?';
   const smsUrl = `sms:${separator}body=${encodeURIComponent(smsBody)}`;
@@ -266,73 +229,6 @@ function fallbackCopy(text) {
   el.select();
   document.execCommand('copy');
   document.body.removeChild(el);
-}
-
-// 📄 PDF 다운로드 — html2canvas + jsPDF
-async function downloadPDF() {
-  const btn = event.currentTarget;
-  const originalText = btn.innerHTML;
-  btn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4m0 12v4m-7.07-3.93l2.83-2.83m8.48-8.48l2.83-2.83M2 12h4m12 0h4m-3.93 7.07l-2.83-2.83M6.34 6.34L3.51 3.51"/></svg> PDF 생성 중...';
-  btn.disabled = true;
-
-  try {
-    const container = document.getElementById('result');
-    const btnGroup = document.querySelector('.btn-group');
-
-    // 버튼 그룹 임시 숨김
-    btnGroup.style.display = 'none';
-
-    // 모바일 카드 레이아웃 대신 테이블 보이기
-    const cardList = document.getElementById('card-list');
-    const tableCard = document.querySelector('.table-card');
-    const origCardDisplay = cardList.style.display;
-    const origTableDisplay = tableCard.style.display;
-    cardList.style.display = 'none';
-    tableCard.style.display = 'block';
-
-    const canvas = await html2canvas(container, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: '#f4f4f0',
-      logging: false
-    });
-
-    // 원래 상태 복원
-    btnGroup.style.display = '';
-    cardList.style.display = origCardDisplay;
-    tableCard.style.display = origTableDisplay;
-
-    const imgData = canvas.toDataURL('image/png');
-    const { jsPDF } = window.jspdf;
-    const imgWidth = 190; // A4 여백 제외 폭 (mm)
-    const pageHeight = 277; // A4 여백 제외 높이 (mm)
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    let heightLeft = imgHeight;
-    let position = 10; // 상단 여백
-
-    pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight;
-
-    while (heightLeft > 0) {
-      position = heightLeft - imgHeight + 10;
-      pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-    }
-
-    const building = document.getElementById('m-building').textContent || '결과';
-    const date = document.getElementById('m-date').textContent || '';
-    pdf.save(`승강기_체크리스트_${building}_${date}.pdf`);
-    showToast('PDF가 다운로드되었습니다!');
-  } catch (err) {
-    console.error('PDF 생성 오류:', err);
-    showToast('PDF 생성에 실패했습니다. 인쇄 기능을 이용해주세요.');
-  } finally {
-    btn.innerHTML = originalText;
-    btn.disabled = false;
-  }
 }
 
 function render(data) {
@@ -384,8 +280,7 @@ function render(data) {
 }
 
 // ─── LZ-String 압축 URL 생성 (공유용) ───
-// 모든 데이터를 JSON → LZ 압축 → URL-safe Base64 로 변환하여
-// 단일 파라미터 'z' 에 담습니다. 한글이 많아도 URL이 짧아집니다.
+// JSON → LZ 압축 → URL-safe 문자열. +/공백 문제 없이 URL이 짧아집니다.
 function buildShortUrl() {
   const base = window.location.origin + window.location.pathname;
   const building = document.getElementById('m-building').textContent;
@@ -394,7 +289,6 @@ function buildShortUrl() {
   const checker  = document.getElementById('m-checker').textContent;
   const opinion  = document.getElementById('opinion-text').textContent;
 
-  // 상태값 수집 (현재 렌더된 데이터 기준)
   const rows = document.querySelectorAll('#result-tbody tr');
   const statuses = [];
   rows.forEach(tr => {
@@ -405,19 +299,18 @@ function buildShortUrl() {
     }
   });
 
-  // 최소 JSON 구조
   const payload = {
     b: building !== '-' ? building : '',
     e: elevnum  !== '-' ? elevnum  : '',
     d: date     !== '-' ? date     : '',
     c: checker  !== '-' ? checker  : '',
     o: opinion  !== '-' ? opinion  : '',
-    s: statuses  // [1,1,1,0,1] 형태
+    s: statuses
   };
 
   const json = JSON.stringify(payload);
   const compressed = LZString.compressToEncodedURIComponent(json);
-  return base + '?' + p.toString().replace(/\+/g, '%20');
+  return base + '?z=' + compressed;
 }
 
 // ─── 페이지 로드 시 데이터 복원 ───

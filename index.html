@@ -82,6 +82,7 @@
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
 </head>
 <body>
 <div class="container">
@@ -382,51 +383,88 @@ function render(data) {
   document.getElementById('s-bad').textContent = bad;
 }
 
-// 짧은 URL 생성 함수 (공유용)
+// ─── LZ-String 압축 URL 생성 (공유용) ───
+// 모든 데이터를 JSON → LZ 압축 → URL-safe Base64 로 변환하여
+// 단일 파라미터 'z' 에 담습니다. 한글이 많아도 URL이 짧아집니다.
 function buildShortUrl() {
   const base = window.location.origin + window.location.pathname;
-  const p = new URLSearchParams();
   const building = document.getElementById('m-building').textContent;
   const elevnum  = document.getElementById('m-elevnum').textContent;
   const date     = document.getElementById('m-date').textContent;
   const checker  = document.getElementById('m-checker').textContent;
   const opinion  = document.getElementById('opinion-text').textContent;
 
-  if (building && building !== '-') p.set('b', building);
-  if (elevnum && elevnum !== '-')   p.set('e', elevnum);
-  if (date && date !== '-')         p.set('d', date);
-  if (checker && checker !== '-')   p.set('c', checker);
-  if (opinion && opinion !== '-')   p.set('o', opinion);
+  // 상태값 수집 (현재 렌더된 데이터 기준)
+  const rows = document.querySelectorAll('#result-tbody tr');
+  const statuses = [];
+  rows.forEach(tr => {
+    const badge = tr.querySelector('.badge');
+    if (badge) {
+      const txt = badge.textContent.trim();
+      statuses.push(txt === '양호' ? 1 : txt === '미흡' ? 0 : 2);
+    }
+  });
 
-  // 양호=1, 미흡=0 으로 상태를 압축 (예: "11101")
-  const params = new URLSearchParams(window.location.search);
-  const statusStr = ITEMS.map(item => {
-    const val = params.get(item.key) || params.get(item.legacyKey) || '';
-    return val === '양호' ? '1' : val === '미흡' ? '0' : '';
-  }).join('');
-  if (statusStr) p.set('s', statusStr);
+  // 최소 JSON 구조
+  const payload = {
+    b: building !== '-' ? building : '',
+    e: elevnum  !== '-' ? elevnum  : '',
+    d: date     !== '-' ? date     : '',
+    c: checker  !== '-' ? checker  : '',
+    o: opinion  !== '-' ? opinion  : '',
+    s: statuses  // [1,1,1,0,1] 형태
+  };
 
-  return base + '?' + p.toString();
+  const json = JSON.stringify(payload);
+  const compressed = LZString.compressToEncodedURIComponent(json);
+  return base + '?z=' + compressed;
 }
 
+// ─── 페이지 로드 시 데이터 복원 ───
 window.addEventListener('DOMContentLoaded', () => {
   const params = new URLSearchParams(window.location.search);
+  let data = null;
 
-  // 짧은 키 's' 파라미터로 상태 복원 (예: "11101" → 양호,양호,양호,미흡,양호)
-  const statusStr = params.get('s') || '';
-  const statusMap = { '1': '양호', '0': '미흡' };
+  // 1) 최신 형식: LZ 압축 파라미터 'z'
+  const zParam = params.get('z');
+  if (zParam) {
+    try {
+      const json = LZString.decompressFromEncodedURIComponent(zParam);
+      const p = JSON.parse(json);
+      const statusMap = { 1: '양호', 0: '미흡' };
+      data = {
+        building: p.b || '',
+        elevnum:  p.e || '',
+        date:     p.d || '',
+        checker:  p.c || '',
+        opinion:  p.o || '',
+        items: ITEMS.map((item, i) => ({
+          ...item,
+          status: statusMap[p.s?.[i]] ?? null
+        }))
+      };
+    } catch (e) {
+      console.warn('LZ 복원 실패, 기존 방식으로 시도합니다.', e);
+    }
+  }
 
-  const data = {
-    building: params.get('b') || params.get('건물명')    || '',
-    elevnum:  params.get('e') || params.get('승강기번호') || '',
-    date:     params.get('d') || params.get('점검일')    || '',
-    checker:  params.get('c') || params.get('확인자')    || '',
-    opinion:  params.get('o') || params.get('종합의견')  || '',
-    items: ITEMS.map((item, i) => ({
-      ...item,
-      status: params.get(item.key) || params.get(item.legacyKey) || statusMap[statusStr[i]] || null
-    }))
-  };
+  // 2) 이전 형식: 개별 파라미터 (하위 호환)
+  if (!data) {
+    const statusStr = params.get('s') || '';
+    const statusMapLegacy = { '1': '양호', '0': '미흡' };
+    data = {
+      building: params.get('b') || params.get('건물명')    || '',
+      elevnum:  params.get('e') || params.get('승강기번호') || '',
+      date:     params.get('d') || params.get('점검일')    || '',
+      checker:  params.get('c') || params.get('확인자')    || '',
+      opinion:  params.get('o') || params.get('종합의견')  || '',
+      items: ITEMS.map((item, i) => ({
+        ...item,
+        status: params.get(item.key) || params.get(item.legacyKey) || statusMapLegacy[statusStr[i]] || null
+      }))
+    };
+  }
+
   const hasData = window.location.search.length > 1;
   if (!hasData) {
     data.building='샘플빌딩'; data.elevnum='A-001';

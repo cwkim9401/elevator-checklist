@@ -417,7 +417,7 @@ function buildShortUrl() {
 
   const json = JSON.stringify(payload);
   const compressed = LZString.compressToEncodedURIComponent(json);
-  return base + '?z=' + compressed;
+  return base + '?' + p.toString().replace(/\+/g, '%20');
 }
 
 // ─── 페이지 로드 시 데이터 복원 ───
